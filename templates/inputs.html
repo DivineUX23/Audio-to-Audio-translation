@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Video Transcription App</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <style>
+      .word{
+        text-decoration: line-through}
+     </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Audio to Audio Translation</h2>
+      <h4><br>Translate audio to any language within minutes, and break language barriers.</h4>
+      <hr>
+      <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data">
+        <h5>Video file?</h5>
+        <div class="form-group">
+          <input type="file" class="form-control-file" name="file" accept="video/*" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+      <hr>
+      <form action="{{ url_for('upload') }}" method="POST">
+        <h5>YouTube video?</h5>
+        <div class="form-group">
+          <label for="youtube_link">Enter the URL of a YouTube video:</label>
+          <input type="text" class="form-control" id="youtube_link" name="youtube_link" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+      <hr>
+
+
+
+      <form action="/upload" method="POST" enctype="multipart/form-data">
+        <h5>Audio file?</h5>
+        <div class="form-group">
+        <input type="file" id="audio" name="audio">
+        </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+
+      <hr>
+
+      <form action="/upload" method="POST" enctype="multipart/form-data">
+        <h5>Audio link?</h5>
+        <div class="form-group">
+        <label for="link">Enter Audio Link:</label>
+        <input type="text" class="form-control" id="link" name="link" placeholder="https://...">
+
+        </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+
+      <hr>
+
+  {% for message in get_flashed_messages() %}
+  <div class="alert alert-danger mt-2">{{ message }}</div>
+{% endfor %}
+    </body>
+ </html>
