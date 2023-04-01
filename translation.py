@@ -33,10 +33,10 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 #Elevenlabs API key
 user.api_key = os.environ["OPENAI_API_KEY"]
 
+
 transcript = []
 
 conversation_history = []
-
 
 bot_response = None
 
@@ -54,6 +54,7 @@ app.config['UPLOAD_FOLDER'] = 'static'
 
 socketio = SocketIO(app)
 Bootstrap(app)
+
 
 @app.route('/')
 def index():
@@ -76,7 +77,6 @@ def upload():
 
 
     if request.method == 'POST':
-        # Check if a file was uploaded
         if 'file' in request.files:
             file = request.files['file']
             filename = file.filename
@@ -91,7 +91,6 @@ def upload():
             return render_template('audio.html', video_url=filepath, transcript=transcript)
 
 
-        # Check if a YouTube link was provided
         elif 'youtube_link' in request.form:
             youtube_link = request.form['youtube_link']
 
@@ -170,21 +169,15 @@ def transcribe_video(filepath):
     # Load the video file
     video = VideoFileClip(filepath)
     segment_duration = 10 * 60  # seconds
-
-    # Initialize an empty list to store the transcripts
     transcripts = []
-
     num_segments = math.ceil(video.duration / segment_duration)
 
     # Loop through the segments
     for i in range(num_segments):
 
-        # Calculate the start and end times for the current segment &  Extract the segment from the video
         start_time = i * segment_duration
         end_time = min((i + 1) * segment_duration, video.duration)
         segment = video.subclip(start_time, end_time)
-
-        # Export the segment as an MP3 file
         segment_name = f"segment_{i+1}.mp3"
         segment.audio.write_audiofile(segment_name)
 
@@ -192,12 +185,9 @@ def transcribe_video(filepath):
         audio = open(segment_name, "rb")
         transcripting = openai.Audio.transcribe("whisper-1", audio).text
         transcripts.append(transcripting)
-
-        # Delete the segment MP3 file
         os.remove(segment_name)
 
     transcript = "\n".join(transcripts)
-
     return transcript
 
 
@@ -206,21 +196,15 @@ def transcribe_audio(filepath):
 
     audio = AudioFileClip(filepath)
     segment_duration = 10 * 60  # seconds
-
-    # Initialize an empty list to store the transcripts
     transcripts = []
-
     num_segments = math.ceil(audio.duration / segment_duration)
 
     # Loop through the segments
     for i in range(num_segments):
 
-        # Calculate the start and end times for the current segment &  Extract the segment from the video
         start_time = i * segment_duration
         end_time = min((i + 1) * segment_duration, audio.duration)
         segment = audio.subclip(start_time, end_time)
-
-        # Export the segment as an MP3 file
         segment_name = f"segment_{i+1}.mp3"
         segment.write_audiofile(segment_name)
 
@@ -229,16 +213,14 @@ def transcribe_audio(filepath):
         transcripting = openai.Audio.transcribe("whisper-1", audio).text
         transcripts.append(transcripting)
 
-        # Delete the segment MP3 file
         os.remove(segment_name)
-
     transcript = "\n".join(transcripts)
 
     return transcript
 
 
-
 # Getting users to choose a voice
+
 @socketio.on('voice_id')
 def get_audio(voice_id):
 
@@ -258,11 +240,9 @@ def get_audio(voice_id):
 
 
 
-
 #opeanAI for the chat converation:
 nltk.download('punkt')
 
-#opeanAI for the chat converation:
 @socketio.on('user_input')
 
 def handle_conversation(user_input):
@@ -344,7 +324,6 @@ def generate_response(transcript, user_input):
     bot_first_response = completion.choices[0].message.content
 
     return bot_first_response
-
 
 
 
