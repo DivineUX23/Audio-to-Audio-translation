@@ -12,10 +12,12 @@ cd <project-name>
 Create a virtual environment and install the required packages:
 
 '''
+  
 Copy code
 python -m venv venv
 source venv/bin/activate  # on Windows, use "venv\Scripts\activate"
 pip install -r requirements.txt
+  
 '''
   
 ## Usage
