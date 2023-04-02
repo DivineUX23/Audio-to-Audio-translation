@@ -1,8 +1,8 @@
-#Speech and Speech Translation App
+# Speech and Speech Translation App
 
 This is a Flask web app that allows you to translate audio and video files to an audio output in any languag of your choice using OpenAI's whisper, gpt-3.5-turbo and Eleven labs. It uses the pytube, moviepy, and pydub libraries to download and process the videos, and nltk for tokenizing the text.
 
-##Installation
+## Installation
 Clone this repository and navigate to the project directory:
 
 bash
@@ -18,7 +18,7 @@ source venv/bin/activate  # on Windows, use "venv\Scripts\activate"
 pip install -r requirements.txt
 '''
   
-##Usage
+## Usage
 '''
 Run the app locally using Flask:
 arduino
@@ -29,14 +29,14 @@ flask run
 '''
 Navigate to http://localhost:5000/ in your web browser to access the app.
 
-##Features
+## Features
 Upload audio or video files or links.
 Transcribe audio or video and generate a text output.
 Chuck words of over 3000 tokens.
 Use the OpenAI API to translate.
 Use Elevenlabs API to convert text to audio.
 
-##Dependencies
+## Dependencies
 Flask
 Flask-SocketIO
 Flask-Bootstrap
@@ -47,7 +47,7 @@ nltk
 OpenAI API key
 Elevenlabs API key
 
-##Contributing
+## Contributing
 Contributions to this project are welcome. To contribute, please follow these steps:
 Fork this repository.
 Create a new branch: git checkout -b my-new-branch
