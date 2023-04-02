@@ -2,6 +2,10 @@
 
 This is a Flask web app that allows you to translate audio and video files to an audio output in any languag of your choice using OpenAI's whisper, gpt-3.5-turbo and Eleven labs. It uses the pytube, moviepy, and pydub libraries to download and process the videos, and nltk for tokenizing the text.
 
+## Watch a simple demo of the project:
+
+https://user-images.githubusercontent.com/96517814/229331997-4525a982-a482-462a-8a3a-559073905151.mp4
+
 ## Installation
 Clone this repository and navigate to the project directory:
 
