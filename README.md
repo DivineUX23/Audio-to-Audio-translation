@@ -9,53 +9,54 @@ https://user-images.githubusercontent.com/96517814/229331997-4525a982-a482-462a-
 ## Installation
 Clone this repository and navigate to the project directory:
 
-bash
-Copy code
+```bash
 git clone https://github.com/<username>/<project-name>.git
 cd <project-name>
+```
+
 Create a virtual environment and install the required packages:
 
-'''
-Copy code
+```bash
 python -m venv venv
 source venv/bin/activate  # on Windows, use "venv\Scripts\activate"
 pip install -r requirements.txt
-'''
+```
   
 ## Usage
-'''
 Run the app locally using Flask:
-arduino
-Copy code
+
+```arduino
 export FLASK_APP=app.py
 export FLASK_ENV=development
 flask run
-'''
-Navigate to http://localhost:5000/ in your web browser to access the app.
+```
+Navigate to `http://localhost:5000/` in your web browser to access the app.
 
 ## Features
-Upload audio or video files or links.
-Transcribe audio or video and generate a text output.
-Chuck words of over 3000 tokens.
-Use the OpenAI API to translate.
-Use Elevenlabs API to convert text to audio.
+- Upload audio or video files or links.
+- Transcribe audio or video and generate a text output.
+- Chuck words of over 3000 tokens.
+- Use the OpenAI API to translate.
+- Use Elevenlabs API to convert text to audio.
 
 ## Dependencies
-Flask
-Flask-SocketIO
-Flask-Bootstrap
-PyTube
-moviepy
-pydub
-nltk
-OpenAI API key
-Elevenlabs API key
+```
+- Flask
+- Flask-SocketIO
+- Flask-Bootstrap
+- PyTube
+- moviepy
+- pydub
+- nltk
+- OpenAI API key
+- Elevenlabs API key
+```
 
 ## Contributing
 Contributions to this project are welcome. To contribute, please follow these steps:
-Fork this repository.
-Create a new branch: git checkout -b my-new-branch
-Make your changes and commit them: git commit -m "Add some feature"
-Push to the branch: git push origin my-new-branch
-Create a new pull request.
-Please include a clear description of your changes and their purpose.
+1. Fork this repository.
+2. Create a new branch: `git checkout -b my-new-branch`
+3. Make your changes and commit them: `git commit -m "Add some feature"`
+4. Push to the branch: `git push origin my-new-branch`
+5. Create a new pull request.
+6. Please include a clear description of your changes and their purpose.
