@@ -27,11 +27,24 @@ from nltk.tokenize import sent_tokenize
 from nltk.tokenize import word_tokenize
 
 
-# Use your own API key
-openai.api_key = os.environ["OPENAI_API_KEY"]
+# ---------------------------------------------------------------------------
+# Provider selection. PROVIDER=sixtydb routes STT (Whisper -> /stt),
+# LLM (gpt-3.5-turbo -> /v1/chat/completions, model 60db-tiny) and TTS
+# (ElevenLabs -> /ws/tts) to 60db. Anything else keeps the original path.
+# Docs: https://docs.60db.ai
+# ---------------------------------------------------------------------------
+PROVIDER = os.environ.get("PROVIDER", "openai").lower()
 
-#Elevenlabs API key
-user.api_key = os.environ["OPENAI_API_KEY"]
+# Keys are looked up lazily so missing creds for the inactive provider
+# don't break module import.
+openai.api_key = os.environ.get("OPENAI_API_KEY")
+
+# ElevenLabs API key. The original module assigned it to a bare name `user`
+# which is referenced in audio_output() below.
+user = os.environ.get("ELEVENLABS_API_KEY") or os.environ.get("user", "")
+
+if PROVIDER == "sixtydb":
+    import provider_sixtydb
 
 
 transcript = []
@@ -162,6 +175,37 @@ def play_file(filename):
     return send_file(file_path, mimetype='audio/mp3')
 
 
+# ---------------------------------------------------------------------------
+# 60db discovery routes — populate browser-side voice / model pickers without
+# leaking the SIXTYDB_API_KEY. The browser hits these proxies; they call 60db
+# server-side and forward the JSON. Active only when PROVIDER=sixtydb.
+# ---------------------------------------------------------------------------
+
+@app.route('/sixtydb/voices', methods=['GET'])
+def sixtydb_voices():
+    if PROVIDER != "sixtydb":
+        return {"error": "PROVIDER is not sixtydb"}, 400
+    try:
+        return {
+            "default": provider_sixtydb.list_default_voices(),
+            "mine": provider_sixtydb.list_my_voices(),
+        }
+    except Exception as exc:  # surfacing 60db / auth errors as 502 keeps the UI sane
+        return {"error": str(exc)}, 502
+
+
+@app.route('/sixtydb/models', methods=['GET'])
+def sixtydb_models():
+    if PROVIDER != "sixtydb":
+        return {"error": "PROVIDER is not sixtydb"}, 400
+    try:
+        return {
+            "tts": provider_sixtydb.list_tts_models(),
+            "stt": provider_sixtydb.list_stt_models(),
+        }
+    except Exception as exc:
+        return {"error": str(exc)}, 502
+
 
 #For generating of video the transcript with wisper
 def transcribe_video(filepath):
@@ -181,9 +225,12 @@ def transcribe_video(filepath):
         segment_name = f"segment_{i+1}.mp3"
         segment.audio.write_audiofile(segment_name)
 
-        # Pass the audio segment to WISPR for speech recognition
-        audio = open(segment_name, "rb")
-        transcripting = openai.Audio.transcribe("whisper-1", audio).text
+        # Speech recognition: Whisper by default, 60db /stt when PROVIDER=sixtydb.
+        if PROVIDER == "sixtydb":
+            transcripting = provider_sixtydb.transcribe_chunk(segment_name)
+        else:
+            audio = open(segment_name, "rb")
+            transcripting = openai.Audio.transcribe("whisper-1", audio).text
         transcripts.append(transcripting)
         os.remove(segment_name)
 
@@ -208,9 +255,12 @@ def transcribe_audio(filepath):
         segment_name = f"segment_{i+1}.mp3"
         segment.write_audiofile(segment_name)
 
-        # Pass the audio segment to WISPR for speech recognition
-        audio = open(segment_name, "rb")
-        transcripting = openai.Audio.transcribe("whisper-1", audio).text
+        # Speech recognition: Whisper by default, 60db /stt when PROVIDER=sixtydb.
+        if PROVIDER == "sixtydb":
+            transcripting = provider_sixtydb.transcribe_chunk(segment_name)
+        else:
+            audio = open(segment_name, "rb")
+            transcripting = openai.Audio.transcribe("whisper-1", audio).text
         transcripts.append(transcripting)
 
         os.remove(segment_name)
@@ -228,13 +278,19 @@ def get_audio(voice_id):
 
     print(f"Voice ID = {voice_id}")
 
-    word2 = "Jane"
-
-    if set(voice_id) == set(word2):
-        voice = 'EXAVITQu4vr4xnSDxMaL'
-
+    if PROVIDER == "sixtydb":
+        # On the 60db path the picker either forwards a 60db voice UUID
+        # straight through, or falls back to SIXTYDB_DEFAULT_VOICE_ID.
+        if voice_id and len(voice_id) > 12:
+            voice = voice_id
+        else:
+            voice = provider_sixtydb.default_voice_id()
     else:
-        voice = 'pNInz6obpgDQGcFmaJgB'
+        word2 = "Jane"
+        if set(voice_id) == set(word2):
+            voice = 'EXAVITQu4vr4xnSDxMaL'
+        else:
+            voice = 'pNInz6obpgDQGcFmaJgB'
 
     print(f"Voice ID = {voice}")
 
@@ -298,12 +354,18 @@ def handle_conversation(user_input):
 
     new_audio = audio_output(bot_response, voice)
 
-    # Create a Flask response object with the mp3 data and appropriate headers
-    response = Response(new_audio, mimetype='audio/mpeg')
-    response.headers.set('Content-Disposition', 'attachment', filename='responding.mp3')
+    # 60db's WS TTS emits LINEAR16 wrapped as WAV; ElevenLabs streams MP3.
+    audio_mime = 'audio/wav' if PROVIDER == 'sixtydb' else 'audio/mpeg'
+    audio_ext = 'wav' if PROVIDER == 'sixtydb' else 'mp3'
+
+    # Create a Flask response object with the audio data and appropriate headers
+    response = Response(new_audio, mimetype=audio_mime)
+    response.headers.set(
+        'Content-Disposition', 'attachment', filename=f'responding.{audio_ext}'
+    )
 
     # Emit the audio data to the client-side
-    socketio.emit('new_audio', {'data': new_audio, 'type': 'audio/mpeg'})
+    socketio.emit('new_audio', {'data': new_audio, 'type': audio_mime})
     socketio.emit('bot_response', bot_response)
 
 
@@ -311,6 +373,11 @@ def handle_conversation(user_input):
 
 #passing transcript or each chucks to chatgpt
 def generate_response(transcript, user_input):
+
+    # Provider-aware translation. 60db serves an OpenAI-compatible
+    # /v1/chat/completions surface, so the message shape is identical.
+    if PROVIDER == "sixtydb":
+        return provider_sixtydb.chat_translate(transcript, user_input)
 
     prompt = f"Translate {transcript} to {user_input}, don't say anything else except the translation,"
 
@@ -327,10 +394,14 @@ def generate_response(transcript, user_input):
 
 
 
-#Eleven-labs: Text to audio for new lang
+#Eleven-labs (or 60db): Text to audio for new lang
 def audio_output(bot_response, voice):
 
     print(voice)
+
+    # 60db path: realtime LINEAR16 over WebSocket, wrapped as WAV.
+    if PROVIDER == "sixtydb":
+        return provider_sixtydb.synthesize_ws(bot_response, voice)
 
     CHUNK_SIZE = 1024
 
